@@ -11,7 +11,7 @@ push to github:
     - if [ ! -n "$(grep "^github.com " ~/.ssh/known_hosts)" ]; then ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null; fi
     - eval $(ssh-agent -s)
     - echo "$GITHUB_SSH_KEY" > /tmp/ssh_key && chmod 600 /tmp/ssh_key
-    - ssh-add < /tmp/ssh_key
+    - ssh-add /tmp/ssh_key
     - git push $GITHUB_REPO_URL master 
     - ssh-agent -k || { ssh-agent -k ; exit 1; }
   allow_failure: True
