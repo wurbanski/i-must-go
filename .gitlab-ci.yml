@@ -1,0 +1,18 @@
+stages:
+  - build
+  - test
+  - github
+  - cleanup
+
+push to github:
+  image: wurbanski/alpine-git
+  stage: github
+  script:
+    - if [ `grep -c github.com ~/.ssh/known_hosts` -eq 0 ]; then ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts; fi
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$GITHUB_SSH_KEY")
+    - git push $GITHUB_REPO_URL master 
+    - ssh-agent -k || { ssh-agent -k ; exit 1; }
+  allow_failure: True
+  only:
+    - master
