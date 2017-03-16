@@ -14,7 +14,7 @@ push to github:
     - eval $(ssh-agent -s)
     - echo "$GITHUB_SSH_KEY" > /tmp/ssh_key && chmod 600 /tmp/ssh_key
     - ssh-add /tmp/ssh_key
-    - git push $GITHUB_REPO_URL master 
+    - git push $GITHUB_REPO_URL HEAD:master 
     - ssh-agent -k || { ssh-agent -k ; exit 1; }
   allow_failure: True
   only:
