@@ -21,11 +21,6 @@ stages:
 
 # Build stages
 
-build alpine:
-  <<: *job
-  <<: *build
-  image: golang:1.8-alpine
-
 build linux:
   <<: *job
   <<: *build
