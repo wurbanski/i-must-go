@@ -3,23 +3,30 @@ stages:
   - test
   - github
 
+#  Templates
+
 .job_template: &job
   tags:
     - docker-runner
 
-build alpine:
-  <<: *job
-  image: golang:1.8-alpine
+.build_template: &build
   stage: build
   script:
+    - go get
+    - go get .
     - go build
+
+# Build stages
+
+build alpine:
+  <<: *job
+  <<: *build
+  image: golang:1.8-alpine
 
 build linux:
   <<: *job
+  <<: *build
   image: golang:1.8
-  stage: build
-  script:
-    - go build
 
 push to github:
   <<: *job
