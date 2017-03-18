@@ -2,13 +2,29 @@ stages:
   - build
   - test
   - github
-  - cleanup
 
-push to github:
-  image: wurbanski/alpine-git
-  stage: github
+.job_template: &job
   tags:
     - docker-runner
+
+build alpine:
+  <<: *job
+  image: golang:1.8-alpine
+  stage: build
+  script:
+    - go build
+
+build linux:
+  <<: *job
+  image: golang:1.8
+  stage: build
+  script:
+    - go build
+
+push to github:
+  <<: *job
+  image: wurbanski/alpine-git
+  stage: github
   script:
     - if [ ! -n "$(grep "^github.com " ~/.ssh/known_hosts)" ]; then ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null; fi
     - eval $(ssh-agent -s)
