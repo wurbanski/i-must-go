@@ -9,8 +9,8 @@ stages:
   tags:
     - docker-runner
 
-.build_template: &build
-  stage: build
+.go_template: &go_setup
+  image: golang:1.8
   before_script:
     - mkdir -p $GOPATH/src/${CI_PROJECT_URL#https://}
     - mv $CI_PROJECT_DIR/* $GOPATH/src/${CI_PROJECT_URL#https://}
@@ -22,14 +22,15 @@ stages:
 
 build linux:
   <<: *job
-  <<: *build
-  image: golang:1.8
+  <<: *go_setup
+  stage: build
   script:
     - go build
 
 unit tests:
   <<: *job
-  <<: *build
+  <<: *go_setup
+  stage: test
   script:
     - go test
 
