@@ -11,13 +11,12 @@ stages:
 
 .build_template: &build
   stage: build
-  script:
+  before_script:
     - mkdir -p $GOPATH/src/${CI_PROJECT_URL#https://}
     - mv $CI_PROJECT_DIR/* $GOPATH/src/${CI_PROJECT_URL#https://}
     - cd $GOPATH/src/${CI_PROJECT_URL#https://}
     - go get
     - go get .
-    - go build
 
 # Build stages
 
@@ -25,6 +24,14 @@ build linux:
   <<: *job
   <<: *build
   image: golang:1.8
+  script:
+    - go build
+
+unit tests:
+  <<: *job
+  <<: *build
+  script:
+    - go test
 
 push to github:
   <<: *job
