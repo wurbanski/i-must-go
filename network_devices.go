@@ -10,60 +10,87 @@ import (
 	gosnmp "github.com/soniah/gosnmp"
 )
 
+type IPAddr string
+
+// Port
+
 type Port struct {
-	RemoteSwitch *NetworkSwitch
+	RemoteAddress IPAddr
+	RemotePort    int
+	LocalAddress  IPAddr
+	LocalPort     int
 }
+
+func (p Port) String() string {
+	return fmt.Sprintf("%s:%02d\t->\t%s\n", p.LocalAddress, p.LocalPort, p.RemoteAddress)
+}
+
+// interface NetworkDevice
+
+type NetworkDevice interface {
+	GetIP() IPAddr
+	GetNeighbors() map[int]IPAddr
+}
+
+// NetworkSwitch
 
 type NetworkSwitch struct {
-	IP    string
-	Ports map[int]*Port
+	IP    IPAddr
+	Ports map[int]IPAddr
 }
 
-func NewNetworkSwitch(IP string) *NetworkSwitch {
+func NewNetworkSwitch(IP IPAddr) *NetworkSwitch {
 	return &NetworkSwitch{
 		IP:    IP,
-		Ports: make(map[int]*Port),
+		Ports: make(map[int]IPAddr),
 	}
 }
 
-func (n NetworkSwitch) FindRemotes() {
+func (n NetworkSwitch) GetIP() IPAddr {
+	return n.IP
+}
+
+func (n NetworkSwitch) String() string {
+	return fmt.Sprintf("\nSwitch: %s (%d connections)\n", n.IP, len(n.Ports))
+}
+
+func (n *NetworkSwitch) GetNeighbors() map[int]IPAddr {
 	snmpConnection := &gosnmp.GoSNMP{
-		Target:    n.IP,
+		Target:    string(n.IP),
 		Port:      161,
 		Community: "DS-public",
 		Version:   gosnmp.Version2c,
 		Timeout:   time.Duration(2) * time.Second,
 	}
 
+	fmt.Printf("Trying %s...", n.GetIP())
 	err := snmpConnection.Connect()
 	if err != nil {
 		log.Fatalf("Connect() err: %v", err)
+	} else {
+		defer snmpConnection.Conn.Close()
 	}
-	defer snmpConnection.Conn.Close()
 
 	lldpOid := "1.0.8802.1.1.2.1.4.2.1"
 
 	err2 := snmpConnection.BulkWalk(lldpOid, n.interpretValue)
 	if err2 != nil {
-		log.Fatalf("Get() err: %v", err2)
+		fmt.Println(" error, ignoring...")
+	} else {
+		fmt.Println("")
 	}
+	// fmt.Printf("%s", n.Ports)
 
-}
-
-func (n NetworkSwitch) String() string {
-	return fmt.Sprintf("Switch: %s\nPorts: %s", n.IP, n.Ports)
+	return n.Ports
 }
 
 func (n NetworkSwitch) ShowPorts() string {
 	return fmt.Sprintf("%s", n.Ports)
 }
 
-func (p Port) String() string {
-	return fmt.Sprintf("Remote IP:%s\n", p.RemoteSwitch.IP)
-}
+func (n *NetworkSwitch) interpretValue(pdu gosnmp.SnmpPDU) error {
 
-func (n NetworkSwitch) unpackPduName(s string) (int, string) {
-	splitOid := str.Split(s, ".")
+	splitOid := str.Split(pdu.Name, ".")
 
 	portId, err := strconv.Atoi(splitOid[13])
 	if err != nil {
@@ -71,24 +98,10 @@ func (n NetworkSwitch) unpackPduName(s string) (int, string) {
 		fmt.Println(err)
 	}
 
-	remoteIP := str.Join(splitOid[17:], ".")
+	remoteIP := IPAddr(str.Join(splitOid[17:], "."))
 
-	return portId, remoteIP
-}
-
-func (n *NetworkSwitch) interpretValue(pdu gosnmp.SnmpPDU) error {
-
-	portId, remoteIP := n.unpackPduName(pdu.Name)
-
-	nswitch, ok := switches[remoteIP]
-	if !ok {
-		nswitch = NewNetworkSwitch(remoteIP)
-		switches[remoteIP] = nswitch
-	}
-
-	_, ok = n.Ports[portId]
-	if !ok {
-		n.Ports[portId] = &Port{nswitch}
+	if _, ok := n.Ports[portId]; !ok {
+		n.Ports[portId] = remoteIP
 	}
 
 	return nil
