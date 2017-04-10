@@ -63,7 +63,7 @@ func (n *NetworkSwitch) GetNeighbors() map[int]IPAddr {
 		Timeout:   time.Duration(2) * time.Second,
 	}
 
-	fmt.Printf("Trying %s...", n.GetIP())
+	// fmt.Printf("Trying %s...", n.GetIP())
 	err := snmpConnection.Connect()
 	if err != nil {
 		log.Fatalf("Connect() err: %v", err)
@@ -73,12 +73,12 @@ func (n *NetworkSwitch) GetNeighbors() map[int]IPAddr {
 
 	lldpOid := "1.0.8802.1.1.2.1.4.2.1"
 
-	err2 := snmpConnection.BulkWalk(lldpOid, n.interpretValue)
-	if err2 != nil {
-		fmt.Println(" error, ignoring...")
-	} else {
-		fmt.Println("")
-	}
+	_ = snmpConnection.BulkWalk(lldpOid, n.interpretValue)
+	// if err2 != nil {
+	// 	fmt.Println(" error, ignoring...")
+	// } else {
+	// 	fmt.Println("")
+	// }
 	// fmt.Printf("%s", n.Ports)
 
 	return n.Ports
